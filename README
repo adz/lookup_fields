@@ -1,0 +1,60 @@
+LookupFields
+============
+
+This plugin provides a simple solution for lookup fields - those cases where you just want to store a single text value, but also want to:
+  a) restrict the possible options and 
+  b) be able to reflect on the possible options.  
+
+You could say it's an ActiveRecord implementation of 'enumerations' using a normalised db structure.
+
+It comes with two new ActiveRecord models:
+ * LookupField - has a unique 'name'
+ * LookupValue - belongs to a LookupField, one per each possible value
+
+One new ActiveRecord class method:
+ * lookup_fields - takes a list of symbols representing which lookup_fields to associate with
+
+...and one helper method:
+ * lookup_select - returns a HTML select box with name/id of each LookupValue in a given LookupField
+
+Usage
+=====
+
+You can make any field a lookup_field from within a model.  You just need to create an "_id" column in your models table, then use the "lookup_field" in your model class, like so:
+  lookup_fields :my_lookup_field     # corresponds to "my_lookup_field_id" column
+
+This results in two things:
+ 1. 'my_lookup_field' will 'belong_to' a LookupValue
+ 2. add validation checking that the LookupValue set on 'my_lookup_field' is one of the allowed values 
+   * allowed values are any value associated with the lookup_field
+   * or.. in code:  LookupField.find_by_name("my_lookup_field").values
+
+To read the value:
+Both LookupField and LookupValue models have 'name' fields, and respond with it when asked for 'to_s'.  Therefore you can just display it in your views like so:
+<%= my_model.my_lookup_field %>
+
+To set the value:
+Either find a particular LookupValue to assign, or use the id directly.  Setting via id is made easy with a "lookup_field" helper that returns a select box for a particular lookup field in a model.
+ <%= lookup_select "my_model", "my_lookup_field" %>
+
+The benefit of having models means you can reflect on your lookup fields quite easily:
+  my_lookups = LookupField.find(:all)
+  my_lookup_field = LookupField.find_by_name("my_lookup_field")
+  values = my_lookup_field.values
+
+To help with initial creation of lookup fields, there's a 'build_with_values' class method:
+  LookupField.build_with_values("my_lookup-field", "value1", "value2", "value3")
+
+Caveats:
+You are associating a separate table for the lookup.  Therefore, whenever you want to read the name, you have to do a join.  This might degrade performance - but no more than if you had a separate model.  
+
+The benefit is that if you DO decide you need proper models in separate tables for your lookup field, you can migrat more easily than if you were holding just string values.
+
+
+Installation
+============
+
+Install the plugin, then migrate your database.
+
+You can migrate your database by running migrations in db\migration - or automate that by using the 'plugin_migrations' plugin.
+
